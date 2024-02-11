@@ -456,6 +456,12 @@ class RequestResponseCycle:
     async def send(self, message: "ASGISendEvent") -> None:
         message_type = message["type"]
 
+        # Check if the connection is marked to be closed
+        if self.conn.our_state is h11.MUST_CLOSE:
+            self.conn.send(event=h11.ConnectionClosed())
+            self.transport.close()
+            return  # Stop further processing since the connection is closing.
+
         if self.flow.write_paused and not self.disconnected:
             await self.flow.drain()
 
